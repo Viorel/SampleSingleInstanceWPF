@@ -3,6 +3,7 @@ using System.Data;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Xml.Linq;
 
 
 namespace SampleSingleInstanceWPF
@@ -22,23 +23,31 @@ namespace SampleSingleInstanceWPF
         [DllImport( "user32" )]
         static extern bool SetForegroundWindow( IntPtr hWnd );
 
+
         private void Application_Startup( object sender, StartupEventArgs e )
         {
             Process current_process = Process.GetCurrentProcess( );
-            Debug.Assert( current_process.MainWindowHandle == IntPtr.Zero );
 
             Process? other_process = Process.GetProcessesByName( current_process.ProcessName ).FirstOrDefault( p => p.Id != current_process.Id && p.MainWindowHandle != IntPtr.Zero );
 
             if( other_process != null )
             {
-                if( IsIconic( other_process.MainWindowHandle ) )
-                {
-                    ShowWindow( other_process.MainWindowHandle, SW_RESTORE );
-                }
+                if( IsIconic( other_process.MainWindowHandle ) ) ShowWindow( other_process.MainWindowHandle, SW_RESTORE );
 
                 SetForegroundWindow( other_process.MainWindowHandle );
 
                 Shutdown( );
+
+                return;
+            }
+
+            other_process = Process.GetProcessesByName( current_process.ProcessName ).FirstOrDefault( p => p.Id < current_process.Id );
+
+            if( other_process != null )
+            {
+                Shutdown( );
+
+                return;
             }
         }
     }
